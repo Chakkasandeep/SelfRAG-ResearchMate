@@ -11,16 +11,16 @@ ResearchMate is a fully autonomous academic research assistant that transforms a
 Every visual aspect of ResearchMate is crafted with sleek, high-fidelity **glassmorphic design systems**, deep space gradients, and premium micro-interactions.
 
 ### 1. Main Dashboard & Workspace Layout
-*The primary workspace features active progress trackers, real-time agent telemetry, and a dual-pane layout.*
-![Main Dashboard Mockup](./assets/dashboard_mockup.png)
+<img width="1912" height="1004" alt="image" src="https://github.com/user-attachments/assets/8038fd80-903b-4c8e-9de8-e70452b9ca21" />
+
 
 ### 2. Live Literature Review Canvas
-*The central reading displaying live-scrolling markdown reports, annotated citation badges, and a fully compiling bibliography list.*
-![Literature Review Panel](./assets/lit_review_scrolled.png)
+<img width="938" height="888" alt="image" src="https://github.com/user-attachments/assets/b31b62a5-c65c-49fd-bac8-277bafae6a35" />
+
 
 ### 3. Interactive Force-Directed Citation Network
-*Our interactive SVG Verlet-Physics citation graph links claims to their source documents dynamically. Source nodes are color-coded: arXiv (Rose), Semantic Scholar (Indigo), OpenAlex (Emerald), and Wikipedia (Slate).*
-![Force Graph Visualization](./assets/citation_graph_final.png)
+<img width="1918" height="993" alt="image" src="https://github.com/user-attachments/assets/0a836e52-81a4-4633-8b3f-561dbb2d9527" />
+
 
 ---
 
