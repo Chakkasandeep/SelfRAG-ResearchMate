@@ -1,0 +1,50 @@
+# Byte-compiled / optimized / DLL files
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Python Virtual Environments
+**/venv/
+**/ENV/
+**/env/
+
+# Environment Variables & Private Credentials (CRITICAL)
+**/.env
+**/.env.local
+**/.env.development
+**/.env.production
+**/.env.staging
+**/.env.test
+.env*
+
+# Node / Frontend dependencies
+**/node_modules/
+package-lock.json (optional, but keep for node_modules safety)
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Next.js build and cache outputs
+**/.next/
+**/out/
+**/dist/
+**/build/
+
+# Temp Exporter output files (Local PDFs/PPTXs)
+**/output/*.pdf
+**/output/*.pptx
+*.pptx
+*.pdf
+C:\Users\CHAKK_~1\AppData\Local\Temp\*
+
+# IDEs and OS Metadata
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
