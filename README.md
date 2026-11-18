@@ -62,11 +62,13 @@ Standard LLMs suffer from "imagined citation" patterns. ResearchMate actively in
 
 | Rail | Where | Enforces | Status |
 | :--- | :--- | :--- | :--- |
-| Input | Every Groq call (plan/summarize/critique/synthesize) | prompt injection, unsafe input, pipeline_blocked | Implemented |
+| Input | NeMo `self check input` before planning, summarization, critique, and synthesis; greeting preflight before research | prompt injection, unsafe input, non-research greetings, pipeline_blocked | Implemented |
 | Retrieval | Per-connector plus post-merge in retrieval_agent | relevance, trust, metadata, dedupe, rejection log | Implemented |
 | Output | After synthesize, before SSE [DONE] and PDF/PPTX export | self check output/facts/hallucination, PII mask | Implemented |
 
 Self-RAG is claim-level verification; NeMo Guardrails are pre-generation defenses for input and retrieval plus a final output gate. Output rails run on the assembled response before the SSE `[DONE]` stage and before export — not on a per-token stream.
+
+The input self-check uses the configured Groq model when `GROQ_API_KEY` is set. Greeting-only inputs such as `hi` are rejected before retrieval, including in offline mode. NeMo Guardrails itself does not require an NVIDIA-hosted model key for this setup.
 
 ---
 

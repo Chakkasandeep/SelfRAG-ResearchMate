@@ -1,0 +1,14 @@
+models:
+  - type: main
+    engine: groq
+    model: llama-3.3-70b-versatile
+    parameters:
+      temperature: 0
+      max_tokens: 128
+
+enable_rails_exceptions: true
+
+rails:
+  input:
+    flows:
+      - self check input

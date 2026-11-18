@@ -1,6 +1,7 @@
 import os
 import re
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Literal
 
 
@@ -34,6 +35,8 @@ _INJECTION_PATTERNS = (
     r"reveal\s+(the\s+)?(system|hidden)\s+(prompt|instructions)",
     r"bypass\s+(the\s+)?(guardrails?|safety)",
 )
+_GREETING_TOKENS = {"hello", "hey", "howdy", "greetings"}
+_NEMO_INPUT_RAILS = None
 
 
 def _mask_pii(text: str) -> str:
@@ -47,7 +50,27 @@ async def check_input(text: str, stage: str) -> RailResult:
     if _disabled():
         return RailResult("allow", "Guardrails disabled", metadata={"stage": stage})
 
-    lowered = text.lower()
+    normalized = text.strip().lower()
+    words = re.findall(r"[a-z]+", normalized)
+    if not words:
+        return RailResult(
+            "block",
+            "Please enter an academic research topic or question.",
+            metadata={"stage": stage, "rule": "empty_input"},
+        )
+
+    greeting_only = len(words) <= 3 and (
+        any(word in _GREETING_TOKENS for word in words)
+        or any(re.fullmatch(r"hi+", word) for word in words)
+    )
+    if stage == "plan" and greeting_only:
+        return RailResult(
+            "block",
+            "Please enter an academic research topic or question, not a greeting.",
+            metadata={"stage": stage, "rule": "research_query_required"},
+        )
+
+    lowered = normalized
     for pattern in _INJECTION_PATTERNS:
         if re.search(pattern, lowered, flags=re.I):
             return RailResult(
@@ -55,7 +78,47 @@ async def check_input(text: str, stage: str) -> RailResult:
                 "Prompt injection or instruction override detected.",
                 metadata={"stage": stage, "rule": "self_check_input"},
             )
+
+    api_key = os.getenv("GROQ_API_KEY", "").strip()
+    if api_key and "change_this" not in api_key:
+        try:
+            nemo_rails = _get_nemo_input_rails()
+            response = await nemo_rails.generate_async(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": f"Stage: {stage}\nInput: {text}",
+                    }
+                ]
+            )
+        except Exception as exc:
+            return RailResult(
+                "block",
+                f"NeMo input rail could not complete: {exc}",
+                metadata={"stage": stage, "rule": "nemo_input_rail_error"},
+            )
+
+        if response.get("role") == "exception":
+            content = response.get("content", {})
+            reason = content.get("message", "NeMo input rail blocked this input.") if isinstance(content, dict) else str(content)
+            return RailResult(
+                "block",
+                reason,
+                metadata={"stage": stage, "rule": "nemo_self_check_input"},
+            )
+
     return RailResult("allow", "Input passed guardrails", metadata={"stage": stage})
+
+
+def _get_nemo_input_rails():
+    global _NEMO_INPUT_RAILS
+    if _NEMO_INPUT_RAILS is None:
+        os.environ.setdefault("NEMOGUARDRAILS_LLM_FRAMEWORK", "langchain")
+        from nemoguardrails import LLMRails, RailsConfig
+
+        config_path = Path(__file__).parent / "input"
+        _NEMO_INPUT_RAILS = LLMRails(RailsConfig.from_path(str(config_path)))
+    return _NEMO_INPUT_RAILS
 
 
 async def check_retrieval(
