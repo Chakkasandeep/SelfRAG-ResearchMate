@@ -1,0 +1,15 @@
+models:
+  - type: main
+    engine: groq
+    model: llama-3.3-70b-versatile
+
+rails:
+  input:
+    flows:
+      - self check input
+  output:
+    flows:
+      - self check output
+      - self check facts
+      - self check hallucination
+      - mask sensitive data on output
