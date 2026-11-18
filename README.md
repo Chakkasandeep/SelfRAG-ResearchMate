@@ -1,8 +1,8 @@
 # 🔬 ResearchMate — Autonomous AI-Powered Literature Review Assistant
 
-> **Self-RAG Powered · Zero-Hallucination Verification · Dynamic Citation Graph · Automated PPTX & PDF Reports**
+> **Self-RAG Powered · Defense-in-depth hallucination reduction with measurable verification · Dynamic Citation Graph · Automated PPTX & PDF Reports**
 
-ResearchMate is a fully autonomous academic research assistant that transforms a single research query into a comprehensive, verified literature review. Driven by a state-of-the-art **LangGraph workflow** and a sentence-level **Self-RAG verification engine**, it gathers, analyzes, critiques, and maps academic sources without structural hallucinations.
+ResearchMate is a fully autonomous academic research assistant that transforms a single research query into a comprehensive, verified literature review. Driven by a state-of-the-art **LangGraph workflow** and a sentence-level **Self-RAG verification engine**, it gathers, analyzes, critiques, and maps academic sources with defense-in-depth hallucination reduction and measurable verification.
 
 ---
 
@@ -51,12 +51,22 @@ graph TD
 
 Standard LLMs suffer from "imagined citation" patterns. ResearchMate actively intercepts this via a multi-phase verification loop:
 
-1. **Extraction**: The **Summarization Agent** drafts an initial literature review.
+1. **Extraction**: The **Summarization Agent** drafts an initial literature review. The critic then calls `backend/utils/text_compressor.py :: extract_claims()` to split the draft into claim sentences; claim extraction is not performed inside the summarization agent.
 2. **Analysis**: The **Self-RAG Critic** parses the draft sentence-by-sentence.
 3. **Verification**: For every claim, the critic searches the harvested paper database using semantic keyword overlap algorithms.
 4. **Auto-Binding**: If a claim matches the bibliography but lacks a tag, the critic **auto-binds** it and injects a `[cite:paper_id]` badge. If it is unsupported, it's flagged as a **citation gap**.
 5. **Active Query Expansion**: The **Gap Detector** reformulates search queries for those exact gaps, sending them back to the retrieval harvesters to gather missing evidence.
-6. **Softening**: The **Synthesis Agent** compiles the final paper, automatically toning down or rephrasing any remaining claims that couldn't be strictly verified.
+6. **Softening**: The **Synthesis Agent** compiles the final paper. The Groq synthesis path may tone down or rephrase remaining unsupported claims; the local synthesis fallback does not perform that softening.
+
+## Guardrails Status
+
+| Rail | Where | Enforces | Status |
+| :--- | :--- | :--- | :--- |
+| Input | Every Groq call (plan/summarize/critique/synthesize) | prompt injection, unsafe input, pipeline_blocked | Implemented |
+| Retrieval | Per-connector plus post-merge in retrieval_agent | relevance, trust, metadata, dedupe, rejection log | Implemented |
+| Output | After synthesize, before SSE [DONE] and PDF/PPTX export | self check output/facts/hallucination, PII mask | Implemented |
+
+Self-RAG is claim-level verification; NeMo Guardrails are pre-generation defenses for input and retrieval plus a final output gate. Output rails run on the assembled response before the SSE `[DONE]` stage and before export — not on a per-token stream.
 
 ---
 
@@ -89,7 +99,7 @@ ResearchMate/
 ├── frontend/
 │   ├── app/                       # Next.js App Router (Layout & Pages)
 │   ├── components/                # Glassmorphic React dashboard components
-│   ├── .env.local                 # Next.js API client setup
+│   ├── .env.local.example         # Next.js API client setup template
 │   └── tailwind.config.ts         # Sleek glassy design tokens
 └── assets/                        # Screenshots & graphic documents
 ```
@@ -176,3 +186,13 @@ npm run dev
 Once the literature review is generated, you can download premium assets directly from your workspace:
 * **Academic PDF Report**: Styled with multi-level heading styles, elegant footers, page-budget layouts, and automated bibliography citation indexes.
 * **PowerPoint Slide Deck**: Formatted with high-contrast presenter designs, automatic summary splits, and slide-level citing.
+
+## Evaluation
+
+The evaluation harness and generated comparison data are under `backend/eval/`:
+
+- [backend/eval/results_after.csv](backend/eval/results_after.csv)
+- [backend/eval/results_before.csv](backend/eval/results_before.csv)
+- [backend/eval/demo_block.py](backend/eval/demo_block.py)
+
+The interview demo can be run with `python backend/eval/demo_block.py`.
