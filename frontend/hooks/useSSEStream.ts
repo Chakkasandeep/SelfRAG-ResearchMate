@@ -16,7 +16,8 @@ export function useSSEStream() {
     setCitations,
     setResearching,
     setError,
-    setRailStatus
+    setRailStatus,
+    setAssistantMessage
   } = useResearchStore();
 
   const startResearch = async (query: string) => {
@@ -83,6 +84,12 @@ export function useSSEStream() {
                   reason: data?.reason || "Pipeline blocked by guardrails.",
                   message: data?.message || "I couldn't process that request. Please revise it and try again.",
                 });
+                setResearching(false);
+                continue;
+              }
+
+              if (stage === "smalltalk") {
+                setAssistantMessage(data?.message || "Hi! Please enter an academic research topic to get started.");
                 setResearching(false);
                 continue;
               }

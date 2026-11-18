@@ -1,5 +1,6 @@
 import os
 import re
+import logging
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Literal
@@ -36,7 +37,24 @@ _INJECTION_PATTERNS = (
     r"bypass\s+(the\s+)?(guardrails?|safety)",
 )
 _GREETING_TOKENS = {"hello", "hey", "howdy", "greetings"}
+_SMALLTALK_PATTERNS = (
+    r"^(?:hi+|hello+|hey+|howdy|greetings)(?:\s+(?:there|how are you))?[.!?]*$",
+    r"^(?:good morning|good afternoon|good evening|how are you)[.!?]*$",
+    r"^(?:who are you|what are you|what can you do|what is researchmate)[?.!]*$",
+)
 _NEMO_INPUT_RAILS = None
+logger = logging.getLogger(__name__)
+
+
+def smalltalk_response(text: str) -> str | None:
+    normalized = re.sub(r"\s+", " ", text.strip().lower())
+    if any(re.fullmatch(pattern, normalized) for pattern in _SMALLTALK_PATTERNS):
+        return (
+            "Hi! I'm ResearchMate, an academic research assistant. "
+            "Enter a research topic or question and I'll search sources, "
+            "verify claims, and prepare a literature review."
+        )
+    return None
 
 
 def _mask_pii(text: str) -> str:
@@ -91,10 +109,11 @@ async def check_input(text: str, stage: str) -> RailResult:
                     }
                 ]
             )
-        except Exception as exc:
+        except Exception:
+            logger.exception("NeMo input rail failed at stage %s", stage)
             return RailResult(
                 "block",
-                f"NeMo input rail could not complete: {exc}",
+                "Input safety check is unavailable; please try again.",
                 metadata={"stage": stage, "rule": "nemo_input_rail_error"},
             )
 
@@ -113,11 +132,19 @@ async def check_input(text: str, stage: str) -> RailResult:
 def _get_nemo_input_rails():
     global _NEMO_INPUT_RAILS
     if _NEMO_INPUT_RAILS is None:
-        os.environ.setdefault("NEMOGUARDRAILS_LLM_FRAMEWORK", "langchain")
+        os.environ["NEMOGUARDRAILS_LLM_FRAMEWORK"] = "langchain"
+        from langchain_groq import ChatGroq
         from nemoguardrails import LLMRails, RailsConfig
 
         config_path = Path(__file__).parent / "input"
-        _NEMO_INPUT_RAILS = LLMRails(RailsConfig.from_path(str(config_path)))
+        config = RailsConfig.from_path(str(config_path))
+        llm = ChatGroq(
+            model="llama-3.3-70b-versatile",
+            api_key=os.getenv("GROQ_API_KEY"),
+            temperature=0,
+            max_tokens=128,
+        )
+        _NEMO_INPUT_RAILS = LLMRails(config, llm=llm)
     return _NEMO_INPUT_RAILS
 
 

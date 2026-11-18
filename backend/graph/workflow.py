@@ -6,7 +6,7 @@ from agents.self_rag_critic import critique
 from agents.gap_detector import detect_gaps
 from agents.synthesis_agent import synthesize
 from typing import TypedDict, List, AsyncIterator, Dict, Any
-from guardrails.rails import check_output
+from guardrails.rails import check_output, smalltalk_response
 
 class ResearchState(TypedDict):
     query: str
@@ -78,6 +78,14 @@ async def run_research_pipeline(query: str) -> AsyncIterator[dict]:
     """
     Executes compiled state graph and yields step events live to the SSE stream.
     """
+    reply = smalltalk_response(query)
+    if reply:
+        yield {
+            "stage": "smalltalk",
+            "data": {"type": "smalltalk", "message": reply},
+        }
+        return
+
     graph = build_graph()
     state = {
         "query": query, 
@@ -145,16 +153,19 @@ async def run_research_pipeline(query: str) -> AsyncIterator[dict]:
 
     if pipeline_blocked:
         blocked_stage = pipeline_blocked["stage"]
+        blocked_reason = pipeline_blocked["reason"]
+        if "unavailable" in blocked_reason.lower():
+            blocked_message = "The input safety check is unavailable right now. Please try again shortly."
+        elif blocked_stage == "plan":
+            blocked_message = "That request couldn't pass the input check. Please try a clear academic research topic or question."
+        else:
+            blocked_message = "I couldn't continue because the input did not pass the safety check. Please revise it and try again."
         yield {
             "stage": "pipeline_blocked",
             "data": {
                 "type": "pipeline_blocked",
                 "stage": blocked_stage,
-                "reason": pipeline_blocked["reason"],
-                "message": (
-                    "I couldn't start research from that message. Please enter a clear academic topic or question."
-                    if blocked_stage == "plan"
-                    else "I couldn't continue because the input did not pass the safety check. Please revise it and try again."
-                ),
+                "reason": blocked_reason,
+                "message": blocked_message,
             },
         }

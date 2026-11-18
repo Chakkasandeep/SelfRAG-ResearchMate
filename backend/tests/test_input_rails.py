@@ -3,6 +3,7 @@ import pytest
 
 import backend.guardrails.rails as rails_module
 from backend.guardrails.rails import check_input
+from backend.guardrails.rails import smalltalk_response
 
 
 def test_prompt_injection_query_blocked_at_plan():
@@ -16,6 +17,12 @@ def test_greeting_is_blocked_before_retrieval(monkeypatch):
     result = asyncio.run(check_input("hi", "plan"))
     assert result.action == "block"
     assert result.metadata["rule"] == "research_query_required"
+
+
+def test_greeting_and_identity_questions_get_smalltalk_response():
+    assert smalltalk_response("Hi!") is not None
+    assert smalltalk_response("Who are you?") is not None
+    assert smalltalk_response("Self-RAG hallucination reduction in clinical LLMs") is None
 
 
 def test_greeting_like_topic_is_blocked_offline(monkeypatch):

@@ -18,7 +18,7 @@ export interface Verdict {
   reason?: string;
 }
 
-export type PipelineStage = "idle" | "plan" | "retrieve" | "summarize" | "critique" | "gap_detect" | "synthesize" | "error";
+export type PipelineStage = "idle" | "plan" | "retrieve" | "summarize" | "critique" | "gap_detect" | "synthesize" | "smalltalk" | "error";
 export interface RailStatus {
   blocked: boolean;
   stage: string;
@@ -41,6 +41,7 @@ interface ResearchState {
   activeCitationId: string | null;
   error: string | null;
   railStatus: RailStatus | null;
+  assistantMessage: string | null;
   
   // Actions
   setStage: (stage: PipelineStage) => void;
@@ -57,6 +58,7 @@ interface ResearchState {
   setResearching: (isResearching: boolean) => void;
   setError: (error: string | null) => void;
   setRailStatus: (status: RailStatus | null) => void;
+  setAssistantMessage: (message: string | null) => void;
   resetStore: () => void;
 }
 
@@ -74,6 +76,7 @@ export const useResearchStore = create<ResearchState>((set) => ({
   activeCitationId: null,
   error: null,
   railStatus: null,
+  assistantMessage: null,
 
   setStage: (stage) => set({ stage }),
   setQuery: (query) => set({ query }),
@@ -95,6 +98,7 @@ export const useResearchStore = create<ResearchState>((set) => ({
   setResearching: (isResearching) => set({ isResearching }),
   setError: (error) => set({ error, stage: error ? "error" : "idle" }),
   setRailStatus: (railStatus) => set({ railStatus }),
+  setAssistantMessage: (assistantMessage) => set({ assistantMessage }),
   resetStore: () => set({
     stage: "idle",
     query: "",
@@ -109,5 +113,6 @@ export const useResearchStore = create<ResearchState>((set) => ({
     activeCitationId: null,
     error: null,
     railStatus: null,
+    assistantMessage: null,
   }),
 }));
