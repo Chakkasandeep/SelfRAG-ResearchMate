@@ -16,6 +16,10 @@
 **/.env.staging
 **/.env.test
 .env*
+!.env.example
+!**/.env.example
+!.env.local.example
+!**/.env.local.example
 
 # Node / Frontend dependencies
 **/node_modules/
