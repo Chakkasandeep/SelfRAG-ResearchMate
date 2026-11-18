@@ -6,6 +6,7 @@ from retrieval.wikipedia_api import get_wikipedia_context
 from retrieval.tavily_search import web_search
 from retrieval.openAlex_api import search_openalex
 from utils.keyword_filter import quick_filter
+from guardrails.retrieval_guard import filter_batch
 
 logger = logging.getLogger("retrieval_agent")
 
@@ -26,23 +27,40 @@ async def retrieve(state: dict) -> dict:
     topics_to_search = subtopics[:3]
     
     tasks = []
+    task_sources = []
     for topic in topics_to_search:
         tasks.append(search_papers(topic, limit=6))
+        task_sources.append(("Semantic Scholar", topic))
         tasks.append(search_arxiv(topic, max_results=5))
+        task_sources.append(("arXiv", topic))
         tasks.append(search_openalex(topic, limit=6))
+        task_sources.append(("OpenAlex", topic))
         tasks.append(web_search(topic, max_results=3))
+        task_sources.append(("Tavily Web", topic))
         tasks.append(get_wikipedia_context(topic))
+        task_sources.append(("Wikipedia", topic))
         
     try:
         # Run all harvesters in parallel with gather
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        for r in results:
-            if isinstance(r, list):
-                all_papers.extend(r)
-            elif isinstance(r, dict):
-                all_papers.append(r)
+        retrieval_rejections = list(state.get("retrieval_rejections", []))
+        for r, (source, topic) in zip(results, task_sources):
+            raw_items = r if isinstance(r, list) else ([r] if isinstance(r, dict) else [])
+            kept, rejected = filter_batch(raw_items, source, topic)
+            all_papers.extend(kept)
+            retrieval_rejections.extend(rejected)
     except Exception as e:
         logger.error(f"Parallel paper harvesting failed: {e}")
+        retrieval_rejections = list(state.get("retrieval_rejections", []))
+
+    # Safety-net filtering after connector results are merged.
+    safety_kept = []
+    for paper in all_papers:
+        source = paper.get("source", "")
+        kept, rejected = filter_batch([paper], source, query)
+        safety_kept.extend(kept)
+        retrieval_rejections.extend(rejected)
+    all_papers = safety_kept
         
     # Dedup by lowercase title signature + filter via simple keyword gate
     seen_titles = set()
@@ -65,7 +83,11 @@ async def retrieve(state: dict) -> dict:
         logger.info("Academic API harvesting yielded insufficient papers. Activating high-fidelity mockup generator.")
         unique_papers = _generate_mock_papers(query)
         
-    return {**state, "papers": unique_papers[:35]}  # Cap at 35 highly relevant papers
+    return {
+        **state,
+        "papers": unique_papers[:35],
+        "retrieval_rejections": retrieval_rejections,
+    }
 
 def _generate_mock_papers(query: str) -> list[dict]:
     """

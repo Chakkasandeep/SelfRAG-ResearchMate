@@ -1,5 +1,6 @@
 import os
 import logging
+import hashlib
 from tavily import TavilyClient
 
 logger = logging.getLogger("tavily_search")
@@ -28,7 +29,7 @@ async def web_search(query: str, max_results: int = 5) -> list[dict]:
         papers = []
         for r in results.get("results", []):
             url = r.get("url", "")
-            url_hash = str(abs(hash(url)))
+            url_hash = hashlib.sha256(url.encode("utf-8")).hexdigest()[:12]
             papers.append({
                 "id": f"web-{url_hash}",
                 "title": r.get("title", "Web Source Document"),
