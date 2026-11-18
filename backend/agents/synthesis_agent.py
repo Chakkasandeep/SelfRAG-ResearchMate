@@ -2,6 +2,7 @@ import os
 import re
 import logging
 from langchain_groq import ChatGroq
+from guardrails.rails import check_input
 
 logger = logging.getLogger("synthesis_agent")
 
@@ -15,6 +16,21 @@ async def synthesize(state: dict) -> dict:
     draft = state.get("draft", "")
     papers = state.get("papers", [])
     verdicts = state.get("claim_verdicts", [])
+
+    synthesis_input = "\n".join([
+        draft,
+        "\n".join(str(paper.get("abstract", "")) for paper in papers),
+        "\n".join(str(verdict) for verdict in verdicts),
+    ])
+    input_result = await check_input(synthesis_input, "synthesize")
+    if input_result.action == "block":
+        return {
+            **state,
+            "pipeline_blocked": {
+                "stage": "synthesize",
+                "reason": input_result.reason,
+            },
+        }
     
     # Map papers by ID for convenient reference
     papers_map = {p["id"]: p for p in papers}

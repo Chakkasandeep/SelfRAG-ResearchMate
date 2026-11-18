@@ -1,6 +1,7 @@
 import os
 import logging
 from langchain_groq import ChatGroq
+from guardrails.rails import check_input
 
 logger = logging.getLogger("summarization_agent")
 
@@ -13,6 +14,21 @@ async def summarize(state: dict) -> dict:
     query = state.get("query", "")
     subtopics = state.get("subtopics", [])
     papers = state.get("papers", [])
+
+    summarize_input = "\n".join([
+        str(query),
+        str(subtopics),
+        "\n".join(str(paper.get("abstract", "")) for paper in papers),
+    ])
+    input_result = await check_input(summarize_input, "summarize")
+    if input_result.action == "block":
+        return {
+            **state,
+            "pipeline_blocked": {
+                "stage": "summarize",
+                "reason": input_result.reason,
+            },
+        }
     
     api_key = os.getenv("GROQ_API_KEY", "")
     if not api_key or "change_this" in api_key:

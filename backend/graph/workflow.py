@@ -36,12 +36,20 @@ def build_graph():
 
     # Establish execution flows
     g.set_entry_point("plan")
-    g.add_edge("plan",      "retrieve")
-    g.add_edge("retrieve",  "summarize")
-    g.add_edge("summarize", "critique")
+    def route_plan(state: ResearchState) -> str:
+        return END if state.get("pipeline_blocked") else "retrieve"
+
+    def route_summarize(state: ResearchState) -> str:
+        return END if state.get("pipeline_blocked") else "critique"
+
+    g.add_conditional_edges("plan", route_plan)
+    g.add_edge("retrieve", "summarize")
+    g.add_conditional_edges("summarize", route_summarize)
     
     # Conditional edge routing: loop back to retrieve if gaps exist and loop count < 2
     def route_critic_verdict(state: ResearchState) -> str:
+        if state.get("pipeline_blocked"):
+            return END
         # Check if we should search again or move straight to synthesis
         has_gaps = any(v["verdict"] == "Not Supported" for v in state.get("claim_verdicts", []))
         current_count = state.get("loop_count", 0)
@@ -87,8 +95,11 @@ async def run_research_pipeline(query: str) -> AsyncIterator[dict]:
     }
 
     # Stream graph updates step by step
+    pipeline_blocked = None
     async for step in graph.astream(state):
         node_name, node_data = list(step.items())[0]
+        if node_data.get("pipeline_blocked"):
+            pipeline_blocked = node_data["pipeline_blocked"]
         if node_name == "synthesize":
             final_review = node_data.get("final_review", "")
             citations = node_data.get("citations", [])
@@ -131,3 +142,13 @@ async def run_research_pipeline(query: str) -> AsyncIterator[dict]:
                 }
         # Clean data keys for simplified JSON delivery
         yield {"stage": node_name, "data": node_data}
+
+    if pipeline_blocked:
+        yield {
+            "stage": "pipeline_blocked",
+            "data": {
+                "type": "pipeline_blocked",
+                "stage": pipeline_blocked["stage"],
+                "reason": pipeline_blocked["reason"],
+            },
+        }

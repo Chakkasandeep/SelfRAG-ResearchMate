@@ -2,6 +2,7 @@ import os
 import json
 import logging
 from langchain_groq import ChatGroq
+from guardrails.rails import check_input
 
 logger = logging.getLogger("planning_agent")
 
@@ -12,6 +13,16 @@ async def plan(state: dict) -> dict:
     Supports smart fallback to a high-quality local template if Groq is unavailable.
     """
     query = state.get("query", "")
+
+    input_result = await check_input(query, "plan")
+    if input_result.action == "block":
+        return {
+            **state,
+            "pipeline_blocked": {
+                "stage": "plan",
+                "reason": input_result.reason,
+            },
+        }
     
     api_key = os.getenv("GROQ_API_KEY", "")
     # Check for empty or default placeholder keys

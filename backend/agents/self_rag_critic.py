@@ -4,6 +4,7 @@ import logging
 import re
 from langchain_groq import ChatGroq
 from utils.text_compressor import extract_claims
+from guardrails.rails import check_input
 
 logger = logging.getLogger("self_rag_critic")
 
@@ -102,6 +103,20 @@ async def critique(state: dict) -> dict:
     """
     draft = state.get("draft", "")
     papers = state.get("papers", [])
+
+    critic_input = "\n".join([
+        draft,
+        "\n".join(str(paper.get("abstract", "")) for paper in papers),
+    ])
+    input_result = await check_input(critic_input, "critique")
+    if input_result.action == "block":
+        return {
+            **state,
+            "pipeline_blocked": {
+                "stage": "critique",
+                "reason": input_result.reason,
+            },
+        }
     
     # Segment draft into independent claim sentences
     claims = extract_claims(draft)
