@@ -8,7 +8,18 @@ interface ReviewDisplayProps {
 }
 
 export default function ReviewDisplay({ review, citations = [] }: ReviewDisplayProps) {
-  const { setSelectedPaper, papers } = useResearchStore();
+  const { setSelectedPaper, papers, railStatus, stage } = useResearchStore();
+
+  if (railStatus?.blocked) {
+    return (
+      <div className="p-6 md:p-8 rounded-2xl border border-red-500/30 bg-red-950/20">
+        <h2 className="text-base font-bold text-red-300">Review withheld</h2>
+        <p className="mt-2 text-xs text-red-200">
+          Blocked at {railStatus.stage}: {railStatus.reason}
+        </p>
+      </div>
+    );
+  }
 
   const handleCitationClick = (paperId: string) => {
     // Find the paper in the active citation or papers list
@@ -138,6 +149,11 @@ export default function ReviewDisplay({ review, citations = [] }: ReviewDisplayP
       </div>
 
       {/* Structured review content */}
+      {stage === "summarize" && (
+        <div className="mb-4 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-amber-300">
+          Preview — pending verification
+        </div>
+      )}
       <div className="prose prose-invert max-w-none">
         {parseMarkdown(review)}
       </div>

@@ -5,7 +5,7 @@ import { downloadPDF, downloadPPTX } from "@/lib/api";
 import { exportReviewToPDF } from "@/lib/pdfExport";
 
 export default function ExportButtons() {
-  const { review, citations } = useResearchStore();
+  const { review, citations, railStatus } = useResearchStore();
   const [exportingPDF, setExportingPDF] = useState(false);
   const [exportingPPT, setExportingPPT] = useState(false);
   const [exportingClientPDF, setExportingClientPDF] = useState(false);
@@ -46,6 +46,11 @@ export default function ExportButtons() {
 
   if (!review) return null;
 
+  const exportsDisabled = Boolean(railStatus?.blocked) || !review;
+  const blockedTooltip = railStatus?.blocked
+    ? `Blocked by output rail: ${railStatus.reason}`
+    : undefined;
+
   return (
     <div className="flex flex-wrap gap-2.5 mb-6 items-center p-3 rounded-xl glass-card">
       <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-2">
@@ -55,7 +60,8 @@ export default function ExportButtons() {
       {/* Server PDF */}
       <button
         onClick={handleServerPDF}
-        disabled={exportingPDF}
+        disabled={exportingPDF || exportsDisabled}
+        title={blockedTooltip}
         className="flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-500 active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all duration-200"
       >
         {exportingPDF ? (
@@ -69,7 +75,8 @@ export default function ExportButtons() {
       {/* Client PDF */}
       <button
         onClick={handleClientPDF}
-        disabled={exportingClientPDF}
+        disabled={exportingClientPDF || exportsDisabled}
+        title={blockedTooltip}
         className="flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all duration-200 border border-slate-700"
       >
         {exportingClientPDF ? (
@@ -83,7 +90,8 @@ export default function ExportButtons() {
       {/* Server PPT */}
       <button
         onClick={handleServerPPT}
-        disabled={exportingPPT}
+        disabled={exportingPPT || exportsDisabled}
+        title={blockedTooltip}
         className="flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all duration-200"
       >
         {exportingPPT ? (

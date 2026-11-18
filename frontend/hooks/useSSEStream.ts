@@ -15,7 +15,8 @@ export function useSSEStream() {
     setReview,
     setCitations,
     setResearching,
-    setError
+    setError,
+    setRailStatus
   } = useResearchStore();
 
   const startResearch = async (query: string) => {
@@ -73,6 +74,38 @@ export function useSSEStream() {
 
               if (stage) {
                 setStage(stage);
+              }
+
+              if (stage === "pipeline_blocked") {
+                setRailStatus({
+                  blocked: true,
+                  stage: data?.stage || "pipeline",
+                  reason: data?.reason || "Pipeline blocked by guardrails.",
+                });
+                setResearching(false);
+                continue;
+              }
+
+              if (stage === "synthesize" && data?.rail_blocked) {
+                setRailStatus({
+                  blocked: true,
+                  stage: data.rail_blocked.stage || "output",
+                  reason: data.rail_blocked.reason || "Output blocked by guardrails.",
+                });
+                setResearching(false);
+              } else if (stage === "synthesize" && data?.rail_rewritten) {
+                setRailStatus({
+                  blocked: false,
+                  rewritten: true,
+                  stage: data.rail_rewritten.stage || "output",
+                  reason: data.rail_rewritten.reason || "Output rewritten by guardrails.",
+                });
+              }
+
+              if (stage === "error") {
+                setError(data?.error || "An unexpected backend error occurred.");
+                setResearching(false);
+                continue;
               }
 
               if (stage === "plan" && data?.subtopics) {

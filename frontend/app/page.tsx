@@ -6,6 +6,7 @@ import ReviewDisplay from "@/components/ReviewDisplay";
 import CitationGraph from "@/components/CitationGraph";
 import CitationSidePanel from "@/components/CitationSidePanel";
 import ExportButtons from "@/components/ExportButtons";
+import RailStatusBadge from "@/components/RailStatusBadge";
 import { useResearchStore } from "@/store/researchStore";
 import { Sparkles, Brain, Cpu, BookOpen, Loader2 } from "lucide-react";
 
@@ -53,14 +54,17 @@ export default function Home() {
         </div>
 
         {/* Floating status badge indicator */}
-        {isResearching && (
-          <div className="flex items-center gap-2 p-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 shadow-[0_0_10px_rgba(16,185,129,0.05)] animate-pulse-fast">
-            <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
-            <span className="text-[10px] font-bold font-mono text-emerald-400 uppercase tracking-widest">
-              {stage} active
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <RailStatusBadge />
+          {isResearching && (
+            <div className="flex items-center gap-2 p-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 shadow-[0_0_10px_rgba(16,185,129,0.05)] animate-pulse-fast">
+              <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
+              <span className="text-[10px] font-bold font-mono text-emerald-400 uppercase tracking-widest">
+                {stage} active
+              </span>
+            </div>
+          )}
+        </div>
       </header>
 
       {/* Triple Column Workspace Panels Layout */}
