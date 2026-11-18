@@ -1,8 +1,8 @@
 # 🔬 ResearchMate — Autonomous AI-Powered Literature Review Assistant
 
-> **Self-RAG Powered · Defense-in-depth hallucination reduction with measurable verification · Dynamic Citation Graph · Automated PPTX & PDF Reports**
+> **Self-RAG claim checking · NeMo input guardrails · Python retrieval and output checks · PDF & PPTX reports**
 
-ResearchMate is a fully autonomous academic research assistant that transforms a single research query into a comprehensive, verified literature review. Driven by a state-of-the-art **LangGraph workflow** and a sentence-level **Self-RAG verification engine**, it gathers, analyzes, critiques, and maps academic sources with defense-in-depth hallucination reduction and measurable verification.
+ResearchMate turns an academic research question into a literature-review draft using a **LangGraph** workflow and retrieved scholarly sources. Its **Self-RAG critic** checks draft claims against paper abstracts and can trigger another retrieval pass for unsupported claims. Guardrails are applied at three points: **NVIDIA NeMo Guardrails** runs the model-backed input self-check through Groq, while custom **Python rules** filter retrieved papers and check the assembled output before it is sent to the client.
 
 ---
 
@@ -26,18 +26,25 @@ Every visual aspect of ResearchMate is crafted with sleek, high-fidelity **glass
 
 ## 🧠 System Architecture & Workflow
 
-ResearchMate operates as a **coordinated agentic network** orchestrated via a LangGraph state machine. It prevents academic hallucinations by checking every claims list against harvested papers.
+ResearchMate operates as a **coordinated agentic network** orchestrated via a LangGraph state machine. A greeting/identity preflight handles small talk before the graph starts. Research requests then pass through planning, retrieval, summarization, claim verification, optional retrieval for evidence gaps, synthesis, and a final output check.
 
 ### The Unified State Graph
 ```mermaid
 graph TD
-    A["plan (Planning Agent)"] --> B["retrieve (Retrieval Agent)"]
+    P["Greeting / identity preflight"] -->|Research query| A["plan (Planning Agent + input rail)"]
+    P -->|Small talk| S["Friendly ResearchMate reply"]
+    A -->|Allowed| B["retrieve (connectors + Python retrieval checks)"]
+    A -->|Blocked| X["Blocked SSE message"]
     B --> C["summarize (Summarization Agent)"]
     C --> D["critique (Self-RAG Critic)"]
+    C -->|Blocked| X
     D -->|Unsupported claims found| E["gap_detect (Gap Detector)"]
+    D -->|Blocked| X
     E -->|Expand query & loop| B
-    D -->|All claims supported OR limit reached| F["synthesize (Synthesis Agent)"]
-    F --> G["Export API (PDF/PPTX)"]
+    D -->|No gaps OR retry limit reached| F["synthesize (Synthesis Agent)"]
+    F --> O["Python output checks"]
+    O -->|Allow or rewrite| G["SSE result / PDF / PPTX"]
+    O -->|Block| X
     
     style D fill:#10b981,stroke:#047857,stroke-width:2px,color:#ffffff
     style E fill:#f59e0b,stroke:#b45309,stroke-width:2px,color:#ffffff
@@ -58,17 +65,17 @@ Standard LLMs suffer from "imagined citation" patterns. ResearchMate actively in
 5. **Active Query Expansion**: The **Gap Detector** reformulates search queries for those exact gaps, sending them back to the retrieval harvesters to gather missing evidence.
 6. **Softening**: The **Synthesis Agent** compiles the final paper. The Groq synthesis path may tone down or rephrase remaining unsupported claims; the local synthesis fallback does not perform that softening.
 
-## Guardrails Status
+## Guardrails
 
-| Rail | Where | Enforces | Status |
-| :--- | :--- | :--- | :--- |
-| Input | NeMo `self check input` before planning, summarization, critique, and synthesis; greeting preflight before research | prompt injection, unsafe input, non-research greetings, pipeline_blocked | Implemented |
-| Retrieval | Per-connector plus post-merge in retrieval_agent | relevance, trust, metadata, dedupe, rejection log | Implemented |
-| Output | After synthesize, before SSE [DONE] and PDF/PPTX export | self check output/facts/hallucination, PII mask | Implemented |
+| Rail | Where | What it checks |
+| :--- | :--- | :--- |
+| Input | Greeting/identity preflight before graph startup; NeMo `self check input` during planning, summarization, critique, and synthesis | Prompt-injection and unsafe-input checks, and whether a request is suitable for research; rejected requests return a `pipeline_blocked` response |
+| Retrieval | Custom Python checks after each connector and after merge in `retrieval_agent` | Relevance, source trust, required metadata, duplicate records, and a rejection log |
+| Output | Custom Python checks after synthesis and before the final SSE event; export endpoints reject a review when its latest output check blocked it | PII masking, unsupported/fabricated marker checks, and softening of absolute language |
 
-Self-RAG is claim-level verification; NeMo Guardrails are pre-generation defenses for input and retrieval plus a final output gate. Output rails run on the assembled response before the SSE `[DONE]` stage and before export — not on a per-token stream.
+NeMo Guardrails is used for the model-backed input self-check; retrieval and output checks are custom Python rules, not NeMo LLM flows. Output checks run on the assembled response, not on each streamed token.
 
-The input self-check uses the configured Groq model when `GROQ_API_KEY` is set. Greeting-only inputs such as `hi` are rejected before retrieval, including in offline mode. NeMo Guardrails itself does not require an NVIDIA-hosted model key for this setup.
+The NeMo input check uses Groq's `openai/gpt-oss-20b` when `GROQ_API_KEY` is set. The same model ID is currently used by the Groq-backed planning, summarization, critique, and synthesis agents. Recognized greetings and identity questions, such as `hi` and `who are you?`, receive a friendly reply before the graph starts. Without a Groq key, the model-backed NeMo check is skipped and only the local deterministic input checks run. If the NeMo/Groq input check errors, the request is blocked. Groq provides inference, so this setup does not require an NVIDIA-hosted model key.
 
 ---
 
@@ -80,6 +87,15 @@ ResearchMate/
 │   ├── main.py                    # FastAPI server (SSE streams, PDF/PPTX endpoints)
 │   ├── requirements.txt           # Windows pure-python dependencies
 │   ├── .env.example               # Clean environment variables template
+│   ├── guardrails/
+│   │   ├── rails.py               # NeMo/Groq input check, small-talk detection, output checks
+│   │   ├── input_rails.py         # Input rail wrapper and blocked exception type
+│   │   ├── retrieval_guard.py     # Python relevance, metadata, trust, and dedupe checks
+│   │   ├── config.yml             # NeMo rail configuration
+│   │   ├── prompts.yml            # Guardrail prompt templates
+│   │   └── input/
+│   │       ├── config.yml         # NeMo input self-check configuration
+│   │       └── prompts.yml        # Input safety and scope prompt
 │   ├── agents/
 │   │   ├── planning_agent.py      # Breaks query into subtopics via Groq
 │   │   ├── retrieval_agent.py     # Orchestrator (Scholar, arXiv, OpenAlex, Wiki, Tavily)
@@ -89,15 +105,21 @@ ResearchMate/
 │   │   └── synthesis_agent.py     # Final report compiler & bibliography cleaner
 │   ├── graph/
 │   │   └── workflow.py            # LangGraph State Graph workflow definitions
+│   ├── utils/
+│   │   ├── keyword_filter.py      # Retrieval relevance helper
+│   │   ├── text_compressor.py     # Sentence/claim extraction helper
+│   │   └── citation_db.py         # Citation metadata helper
 │   ├── retrieval/
 │   │   ├── semantic_scholar.py    # Semantic Scholar API connector
 │   │   ├── arxiv_api.py           # arXiv API connector
 │   │   ├── wikipedia_api.py       # Wikipedia concept searcher
 │   │   ├── openAlex_api.py        # OpenAlex API search integration
 │   │   └── tavily_search.py       # Tavily Web Search API client
-│   └── output/
-│       ├── ppt_generator.py       # PPTX Slide Deck generator
-│       └── pdf_generator.py       # Pure-python ReportLab academic PDF generator
+│   ├── output/
+│   │   ├── ppt_generator.py       # PPTX Slide Deck generator
+│   │   └── pdf_generator.py       # Pure-python ReportLab academic PDF generator
+│   ├── tests/                     # Input, retrieval, output, and rail contract tests
+│   └── eval/                      # Golden queries, evaluation runner, and demo
 ├── frontend/
 │   ├── app/                       # Next.js App Router (Layout & Pages)
 │   ├── components/                # Glassmorphic React dashboard components
@@ -137,13 +159,14 @@ copy .env.example .env
 ```
 Open the new `.env` file and populate your keys:
 ```ini
-# LLM Provider Key (obtain from https://console.groq.com/)
+# Groq API key for openai/gpt-oss-20b (obtain from https://console.groq.com/)
 GROQ_API_KEY=gsk_yourKeyHere...
 
 # Web Search Key (obtain from https://tavily.com/)
 # Set to 'change_this' or leave blank to skip general web search
 TAVILY_API_KEY=tvly-yourKeyHere...
 ```
+The backend currently uses the Groq model ID `openai/gpt-oss-20b` for its LLM-backed agents and NeMo input check. If Groq reports that a model is unavailable for your account, verify the model ID is enabled for your Groq account before starting the backend.
 
 Run the backend server:
 ```bash

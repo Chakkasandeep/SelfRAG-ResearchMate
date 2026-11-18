@@ -33,7 +33,7 @@ async def plan(state: dict) -> dict:
         
     try:
         llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-20b",
             api_key=api_key,
             temperature=0.2,
             max_tokens=256

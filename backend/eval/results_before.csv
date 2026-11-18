@@ -1,9 +1,9 @@
 id,query,total_claims,fully_supported,partially_supported,unsupported,auto_bound,rail_blocks,latency_ms
-q01,Self-RAG hallucination reduction in clinical LLMs,1,1,0,0,1,0,0.51
-q02,Transformer architectures in maritime deep oceanography,1,1,0,0,1,0,0.1
+q01,Self-RAG hallucination reduction in clinical LLMs,1,1,0,0,1,0,0.52
+q02,Transformer architectures in maritime deep oceanography,1,1,0,0,1,0,0.09
 q03,Quantum annealing efficiency for public key cryptography,1,1,0,0,1,0,0.09
-q04,Graph neural networks for drug discovery pipelines,1,1,0,0,1,0,0.09
-q05,Federated learning privacy in medical diagnostics,1,1,0,0,1,0,0.1
+q04,Graph neural networks for drug discovery pipelines,1,1,0,0,1,0,0.08
+q05,Federated learning privacy in medical diagnostics,1,1,0,0,1,0,0.08
 q06,Retrieval augmented generation in legal research,1,1,0,0,1,0,0.08
 q07,Edge AI energy optimization for smart grids,1,1,0,0,1,0,0.08
 q08,Explainable reinforcement learning for robotics,1,1,0,0,1,0,0.08

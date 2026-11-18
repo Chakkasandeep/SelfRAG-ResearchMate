@@ -39,7 +39,7 @@ async def summarize(state: dict) -> dict:
     try:
         # Utilize low-cost high-speed model for summarization
         llm = ChatGroq(
-            model="llama-3.1-8b-instant",
+            model="openai/gpt-oss-20b",
             api_key=api_key,
             temperature=0.3,
             max_tokens=2048

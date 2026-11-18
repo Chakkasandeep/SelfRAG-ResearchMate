@@ -1,11 +1,11 @@
 id,query,total_claims,fully_supported,partially_supported,unsupported,auto_bound,rail_blocks,latency_ms
-q01,Self-RAG hallucination reduction in clinical LLMs,1,1,0,0,1,0,88.38
-q02,Transformer architectures in maritime deep oceanography,1,1,0,0,1,0,0.73
-q03,Quantum annealing efficiency for public key cryptography,1,1,0,0,1,0,0.59
-q04,Graph neural networks for drug discovery pipelines,1,1,0,0,1,0,0.55
-q05,Federated learning privacy in medical diagnostics,1,1,0,0,1,0,0.91
-q06,Retrieval augmented generation in legal research,1,1,0,0,1,0,1.37
-q07,Edge AI energy optimization for smart grids,1,1,0,0,1,0,0.79
-q08,Explainable reinforcement learning for robotics,1,1,0,0,1,0,0.64
-q09,Bias mitigation in large language model hiring systems,1,1,0,0,1,0,0.65
-q10,Secure multi-agent systems for supply chain planning,1,1,0,0,1,0,0.55
+q01,Self-RAG hallucination reduction in clinical LLMs,1,1,0,0,1,0,123.06
+q02,Transformer architectures in maritime deep oceanography,1,1,0,0,1,0,2.28
+q03,Quantum annealing efficiency for public key cryptography,1,1,0,0,1,0,2.21
+q04,Graph neural networks for drug discovery pipelines,1,1,0,0,1,0,2.13
+q05,Federated learning privacy in medical diagnostics,1,1,0,0,1,0,2.34
+q06,Retrieval augmented generation in legal research,1,1,0,0,1,0,2.52
+q07,Edge AI energy optimization for smart grids,1,1,0,0,1,0,1.97
+q08,Explainable reinforcement learning for robotics,1,1,0,0,1,0,1.88
+q09,Bias mitigation in large language model hiring systems,1,1,0,0,1,0,1.89
+q10,Secure multi-agent systems for supply chain planning,1,1,0,0,1,0,2.19

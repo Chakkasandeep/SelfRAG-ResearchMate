@@ -36,9 +36,9 @@ _INJECTION_PATTERNS = (
     r"reveal\s+(the\s+)?(system|hidden)\s+(prompt|instructions)",
     r"bypass\s+(the\s+)?(guardrails?|safety)",
 )
-_GREETING_TOKENS = {"hello", "hey", "howdy", "greetings"}
+_GREETING_TOKENS = {"hai", "hello", "hey", "howdy", "greetings"}
 _SMALLTALK_PATTERNS = (
-    r"^(?:hi+|hello+|hey+|howdy|greetings)(?:\s+(?:there|how are you))?[.!?]*$",
+    r"^(?:hi+|hai+|hello+|hey+|howdy|greetings)(?:\s+(?:there|how are you))?[.!?]*$",
     r"^(?:good morning|good afternoon|good evening|how are you)[.!?]*$",
     r"^(?:who are you|what are you|what can you do|what is researchmate)[?.!]*$",
 )
@@ -139,7 +139,7 @@ def _get_nemo_input_rails():
         config_path = Path(__file__).parent / "input"
         config = RailsConfig.from_path(str(config_path))
         llm = ChatGroq(
-            model="llama-3.3-70b-versatile",
+            model="openai/gpt-oss-20b",
             api_key=os.getenv("GROQ_API_KEY"),
             temperature=0,
             max_tokens=128,

@@ -24,7 +24,7 @@ async def critique_claim_groq(claim: str, paper: dict, api_key: str) -> dict:
     """Uses Groq Llama3 to critique a single claim against a paper abstract."""
     try:
         llm = ChatGroq(
-            model="llama-3.1-8b-instant",  # active high-speed model
+            model="openai/gpt-oss-20b",
             api_key=api_key,
             temperature=0,
             max_tokens=256
