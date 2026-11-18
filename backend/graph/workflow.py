@@ -6,6 +6,7 @@ from agents.self_rag_critic import critique
 from agents.gap_detector import detect_gaps
 from agents.synthesis_agent import synthesize
 from typing import TypedDict, List, AsyncIterator, Dict, Any
+from guardrails.rails import check_output
 
 class ResearchState(TypedDict):
     query: str
@@ -17,6 +18,9 @@ class ResearchState(TypedDict):
     final_review: str
     citations: List[dict]
     loop_count: int              # Counter to prevent infinite API retry loops
+    retrieval_rejections: List[dict]
+    pipeline_blocked: dict | None
+    last_rail_status: dict | None
 
 def build_graph():
     """Builds and compiles the Self-RAG state workflow machine."""
@@ -76,11 +80,54 @@ async def run_research_pipeline(query: str) -> AsyncIterator[dict]:
         "gaps_found": False,
         "final_review": "", 
         "citations": [],
-        "loop_count": 0
+        "loop_count": 0,
+        "retrieval_rejections": [],
+        "pipeline_blocked": None,
+        "last_rail_status": None,
     }
 
     # Stream graph updates step by step
     async for step in graph.astream(state):
         node_name, node_data = list(step.items())[0]
+        if node_name == "synthesize":
+            final_review = node_data.get("final_review", "")
+            citations = node_data.get("citations", [])
+            papers = node_data.get("papers", [])
+            rail_result = await check_output(final_review, citations, papers)
+
+            if rail_result.action == "block":
+                final_review = f"This review was withheld by output guardrails: {rail_result.reason}"
+                citations = []
+                node_data["final_review"] = final_review
+                node_data["citations"] = citations
+                node_data["rail_blocked"] = {
+                    "stage": "output",
+                    "reason": rail_result.reason,
+                }
+                node_data["last_rail_status"] = {
+                    "blocked": True,
+                    "stage": "output",
+                    "reason": rail_result.reason,
+                }
+            elif rail_result.action == "rewrite":
+                final_review = rail_result.output or final_review
+                node_data["final_review"] = final_review
+                node_data["rail_rewritten"] = {
+                    "stage": "output",
+                    "reason": rail_result.reason,
+                }
+                node_data["last_rail_status"] = {
+                    "blocked": False,
+                    "rewritten": True,
+                    "stage": "output",
+                    "reason": rail_result.reason,
+                }
+            else:
+                node_data["last_rail_status"] = {
+                    "blocked": False,
+                    "rewritten": False,
+                    "stage": "output",
+                    "reason": rail_result.reason,
+                }
         # Clean data keys for simplified JSON delivery
         yield {"stage": node_name, "data": node_data}

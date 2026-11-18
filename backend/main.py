@@ -17,6 +17,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
 logger = logging.getLogger("main")
+_last_output_rail_status = None
 
 # Load graph workflow after env loading
 from graph.workflow import run_research_pipeline
@@ -53,8 +54,13 @@ async def research_stream(body: dict):
     logger.info(f"Initiating research stream for query: '{query}'")
 
     async def event_generator():
+        global _last_output_rail_status
         try:
             async for event in run_research_pipeline(query):
+                event_data = event.get("data", {})
+                rail_status = event_data.get("last_rail_status")
+                if rail_status:
+                    _last_output_rail_status = rail_status
                 # Starlette EventSourceResponse requires standard yield formats
                 yield {
                     "event": "message",
@@ -79,6 +85,15 @@ async def export_pptx(body: dict):
     """
     review = body.get("review", "")
     citations = body.get("citations", [])
+
+    if _last_output_rail_status and _last_output_rail_status.get("blocked"):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "reason": _last_output_rail_status.get("reason", "Output blocked"),
+                "stage": "output",
+            },
+        )
     
     if not review:
         raise HTTPException(status_code=400, detail="Literature review content is empty.")
@@ -105,6 +120,15 @@ async def export_pdf(body: dict):
     """
     review = body.get("review", "")
     citations = body.get("citations", [])
+
+    if _last_output_rail_status and _last_output_rail_status.get("blocked"):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "reason": _last_output_rail_status.get("reason", "Output blocked"),
+                "stage": "output",
+            },
+        )
     
     if not review:
         raise HTTPException(status_code=400, detail="Literature review content is empty.")

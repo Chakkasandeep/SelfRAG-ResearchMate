@@ -26,3 +26,7 @@ class ResearchStateSchema(BaseModel):
     gaps_found: bool
     final_review: str
     citations: List[PaperSchema]
+    retrieval_rejections: List[Dict[str, Any]] = Field(default_factory=list)
+    pipeline_blocked: Optional[Dict[str, Any]] = None
+    loop_count: int = 0
+    last_rail_status: Optional[Dict[str, Any]] = None
