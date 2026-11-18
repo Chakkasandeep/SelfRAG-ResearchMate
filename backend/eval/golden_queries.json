@@ -1,0 +1,12 @@
+[
+  {"id": "q01", "query": "Self-RAG hallucination reduction in clinical LLMs", "expected_topics": ["Self-RAG", "clinical", "hallucination"]},
+  {"id": "q02", "query": "Transformer architectures in maritime deep oceanography", "expected_topics": ["transformer", "maritime", "oceanography"]},
+  {"id": "q03", "query": "Quantum annealing efficiency for public key cryptography", "expected_topics": ["quantum", "annealing", "cryptography"]},
+  {"id": "q04", "query": "Graph neural networks for drug discovery pipelines", "expected_topics": ["graph neural networks", "drug discovery"]},
+  {"id": "q05", "query": "Federated learning privacy in medical diagnostics", "expected_topics": ["federated learning", "privacy", "medical"]},
+  {"id": "q06", "query": "Retrieval augmented generation in legal research", "expected_topics": ["retrieval augmented generation", "legal"]},
+  {"id": "q07", "query": "Edge AI energy optimization for smart grids", "expected_topics": ["edge AI", "energy", "smart grids"]},
+  {"id": "q08", "query": "Explainable reinforcement learning for robotics", "expected_topics": ["explainable", "reinforcement learning", "robotics"]},
+  {"id": "q09", "query": "Bias mitigation in large language model hiring systems", "expected_topics": ["bias", "LLM", "hiring"]},
+  {"id": "q10", "query": "Secure multi-agent systems for supply chain planning", "expected_topics": ["multi-agent", "secure", "supply chain"]}
+]
