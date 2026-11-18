@@ -13,9 +13,14 @@ export default function ReviewDisplay({ review, citations = [] }: ReviewDisplayP
   if (railStatus?.blocked) {
     return (
       <div className="p-6 md:p-8 rounded-2xl border border-red-500/30 bg-red-950/20">
-        <h2 className="text-base font-bold text-red-300">Review withheld</h2>
+        <h2 className="text-base font-bold text-red-300">
+          {railStatus.stage === "output" ? "Review withheld" : "Research not started"}
+        </h2>
+        <p className="mt-2 text-sm text-slate-100">
+          {railStatus.message || "I couldn't process that request. Please revise it and try again."}
+        </p>
         <p className="mt-2 text-xs text-red-200">
-          Blocked at {railStatus.stage}: {railStatus.reason}
+          Stage: {railStatus.stage}. {railStatus.reason}
         </p>
       </div>
     );

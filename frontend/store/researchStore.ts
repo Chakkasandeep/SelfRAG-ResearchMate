@@ -23,6 +23,7 @@ export interface RailStatus {
   blocked: boolean;
   stage: string;
   reason: string;
+  message?: string;
   rewritten?: boolean;
 }
 

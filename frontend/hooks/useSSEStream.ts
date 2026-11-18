@@ -81,6 +81,7 @@ export function useSSEStream() {
                   blocked: true,
                   stage: data?.stage || "pipeline",
                   reason: data?.reason || "Pipeline blocked by guardrails.",
+                  message: data?.message || "I couldn't process that request. Please revise it and try again.",
                 });
                 setResearching(false);
                 continue;
@@ -91,6 +92,7 @@ export function useSSEStream() {
                   blocked: true,
                   stage: data.rail_blocked.stage || "output",
                   reason: data.rail_blocked.reason || "Output blocked by guardrails.",
+                  message: "The draft was withheld by the output safety check. Please try a different research question.",
                 });
                 setResearching(false);
               } else if (stage === "synthesize" && data?.rail_rewritten) {

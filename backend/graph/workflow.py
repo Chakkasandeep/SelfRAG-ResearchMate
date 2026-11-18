@@ -144,11 +144,17 @@ async def run_research_pipeline(query: str) -> AsyncIterator[dict]:
         yield {"stage": node_name, "data": node_data}
 
     if pipeline_blocked:
+        blocked_stage = pipeline_blocked["stage"]
         yield {
             "stage": "pipeline_blocked",
             "data": {
                 "type": "pipeline_blocked",
-                "stage": pipeline_blocked["stage"],
+                "stage": blocked_stage,
                 "reason": pipeline_blocked["reason"],
+                "message": (
+                    "I couldn't start research from that message. Please enter a clear academic topic or question."
+                    if blocked_stage == "plan"
+                    else "I couldn't continue because the input did not pass the safety check. Please revise it and try again."
+                ),
             },
         }
